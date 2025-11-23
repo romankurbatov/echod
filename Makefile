@@ -1,4 +1,4 @@
-CXXFLAGS := $(CXXFLAGS) -Wall -Werror
+CXXFLAGS := $(CXXFLAGS) -std=c++17 -Wall -Werror
 
 headers := $(wildcard *.h *.hpp)
 objects := main.o config.o

@@ -1,6 +1,6 @@
 #include <iostream>
-#include <stdexcept>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #include "config.hpp"
 
@@ -16,6 +16,30 @@ int main(int argc, char *argv[]) {
         Config::show_help();
         return EXIT_SUCCESS;
     }
+
+    std::cout << "UDP addresses: ";
+    for (const sockaddr_in &addr : config.udp_addresses()) {
+        char ip_addr_str[INET_ADDRSTRLEN];
+        if (!inet_ntop(AF_INET, &addr.sin_addr, ip_addr_str, sizeof(ip_addr_str))) {
+            std::cout << "??? ";
+            continue;
+        }
+
+        std::cout << ip_addr_str << ':' << addr.sin_port << ' ';
+    }
+    std::cout << std::endl;
+
+    std::cout << "TCP addresses: ";
+    for (const sockaddr_in &addr : config.tcp_addresses()) {
+        char ip_addr_str[INET_ADDRSTRLEN];
+        if (!inet_ntop(AF_INET, &addr.sin_addr, ip_addr_str, sizeof(ip_addr_str))) {
+            std::cout << "??? ";
+            continue;
+        }
+
+        std::cout << ip_addr_str << ':' << addr.sin_port << ' ';
+    }
+    std::cout << std::endl;
 
     return EXIT_SUCCESS;
 }
