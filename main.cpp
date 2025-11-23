@@ -5,6 +5,7 @@
 
 #include "config.hpp"
 #include "debug.hpp"
+#include "dispatcher.hpp"
 
 void debug_print_address(const sockaddr_in &address) {
     char ip_addr_str[INET_ADDRSTRLEN];
@@ -44,6 +45,18 @@ void debug_print_addresses(const Config &config) {
         debug_print_tcp_addresses(config.tcp_addresses());
 }
 
+bool run(const Config &config) {
+    try {
+        Dispatcher dispatcher;
+        dispatcher.run();
+    } catch (const Dispatcher::Error &e) {
+        std::cerr << "Dispatcher error: " << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 int main(int argc, char *argv[]) {
     Config config(argc, argv);
 
@@ -69,5 +82,5 @@ int main(int argc, char *argv[]) {
 
     debug_print_addresses(config);
 
-    return EXIT_SUCCESS;
+    return run(config) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

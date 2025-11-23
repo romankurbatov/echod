@@ -1,7 +1,7 @@
 CXXFLAGS := $(CXXFLAGS) -std=c++17 -Wall -Werror
 
 headers := $(wildcard *.h *.hpp)
-objects := main.o config.o debug.o
+objects := main.o config.o debug.o dispatcher.o
 exe := echod
 
 $(objects): %.o: %.cpp $(headers)
