@@ -8,6 +8,7 @@
 class Dispatcher {
 public:
     Dispatcher();
+    ~Dispatcher();
 
     Dispatcher(const Dispatcher &) = delete;
     void operator=(const Dispatcher &) = delete;

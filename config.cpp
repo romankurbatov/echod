@@ -136,7 +136,7 @@ std::optional<in_port_t> Config::parse_port(const char *s) {
     if (*end != '\0' || port > 0xffff)
         return {};
 
-    return port;
+    return htons(port);
 }
 
 void Config::show_help() {

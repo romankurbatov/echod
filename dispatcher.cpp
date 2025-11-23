@@ -1,9 +1,13 @@
 #include "dispatcher.hpp"
 
+#include <iostream>
 #include <sstream>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/epoll.h>
+
+#include "debug.hpp"
 
 Dispatcher::Dispatcher() {
     m_epoll_fd = epoll_create1(EPOLL_CLOEXEC);
@@ -11,6 +15,13 @@ Dispatcher::Dispatcher() {
         std::ostringstream ss;
         ss << "epoll_create1() failed: " << strerror(errno);
         throw Error(ss.str());
+    }
+}
+
+Dispatcher::~Dispatcher() {
+    int ret = close(m_epoll_fd);
+    if (ret != 0) {
+        std::cerr << "close() failed: " << strerror(errno) << std::endl;
     }
 }
 
@@ -44,6 +55,7 @@ void Dispatcher::run() {
     int ret;
 
     while ((ret = epoll_wait(m_epoll_fd, &event, 1, -1)) > 0) {
+        Debug::stream << "New event" << Debug::endl;
         Listener *listener = static_cast<Listener *>(event.data.ptr);
         listener->read_cb(event.events);
     }

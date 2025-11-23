@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -6,6 +7,7 @@
 #include "config.hpp"
 #include "debug.hpp"
 #include "dispatcher.hpp"
+#include "udp_server.hpp"
 
 void debug_print_address(const sockaddr_in &address) {
     char ip_addr_str[INET_ADDRSTRLEN];
@@ -16,7 +18,7 @@ void debug_print_address(const sockaddr_in &address) {
         return;
     }
 
-    Debug::stream << ip_addr_str << ':' << address.sin_port << ' ';
+    Debug::stream << ip_addr_str << ':' << ntohs(address.sin_port) << ' ';
 }
 
 void debug_print_udp_addresses(const std::vector<sockaddr_in> &addresses) {
@@ -48,9 +50,19 @@ void debug_print_addresses(const Config &config) {
 bool run(const Config &config) {
     try {
         Dispatcher dispatcher;
+
+        std::vector<std::unique_ptr<UDPServer>> udp_servers;
+        for (const sockaddr_in &address : config.udp_addresses()) {
+            udp_servers.emplace_back(
+                    std::make_unique<UDPServer>(dispatcher, address));
+        }
+
         dispatcher.run();
     } catch (const Dispatcher::Error &e) {
         std::cerr << "Dispatcher error: " << e.what() << std::endl;
+        return false;
+    } catch (const UDPServer::Error &e) {
+        std::cerr << "UDP server error: " << e.what() << std::endl;
         return false;
     }
 
