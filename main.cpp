@@ -17,6 +17,13 @@ int main(int argc, char *argv[]) {
         return EXIT_SUCCESS;
     }
 
+    if (config.udp_addresses().empty() && config.tcp_addresses().empty()) {
+        std::cerr << argv[0] << ": must specify at least one address"
+                  << std::endl;
+        Config::show_help();
+        return EXIT_FAILURE;
+    }
+
     std::cout << "UDP addresses: ";
     for (const sockaddr_in &addr : config.udp_addresses()) {
         char ip_addr_str[INET_ADDRSTRLEN];

@@ -27,7 +27,12 @@ public:
 
 private:
     bool parse(int argc, char *argv[]);
+    bool handle_udp_address(const char *s);
+    bool handle_tcp_address(const char *s);
+
     std::optional<sockaddr_in> parse_address(const char *s);
+    std::optional<in_addr> parse_ip_address(const char *s, const char *end);
+    std::optional<in_port_t> parse_port(const char *s);
 
     bool m_need_help;
     bool m_valid;

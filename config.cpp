@@ -24,34 +24,29 @@ bool Config::parse(int argc, char *argv[]) {
 
     int opt;
     while ((opt = getopt_long(argc, argv, "hu:t:", long_options, nullptr)) != -1) {
+        bool ok;
         switch (opt) {
         case 'h':
             m_need_help = true;
             break;
 
-        case 'u': {
-            std::optional<sockaddr_in> address = parse_address(optarg);
-            if (address) {
-                m_udp_addresses.push_back(*address);
-            } else {
+        case 'u':
+            ok = handle_udp_address(optarg);
+            if (!ok) {
                 std::cerr << argv[0] << ": invalid UDP address: '" << optarg
                           << "'" << std::endl;
                 return false;
             }
             break;
-        }
 
-        case 't': {
-            std::optional<sockaddr_in> address = parse_address(optarg);
-            if (address) {
-                m_tcp_addresses.push_back(*address);
-            } else {
+        case 't':
+            ok = handle_tcp_address(optarg);
+            if (!ok) {
                 std::cerr << argv[0] << ": invalid TCP address: '" << optarg
                           << "'" << std::endl;
                 return false;
             }
             break;
-        }
 
         default:
             return false;
@@ -67,6 +62,24 @@ bool Config::parse(int argc, char *argv[]) {
     return true;
 }
 
+bool Config::handle_udp_address(const char *s) {
+    std::optional<sockaddr_in> address = parse_address(s);
+    if (!address)
+        return false;
+
+    m_udp_addresses.push_back(*address);
+    return true;
+}
+
+bool Config::handle_tcp_address(const char *s) {
+    std::optional<sockaddr_in> address = parse_address(s);
+    if (!address)
+        return false;
+
+    m_tcp_addresses.push_back(*address);
+    return true;
+}
+
 std::optional<sockaddr_in> Config::parse_address(const char *s) {
     // Delimiter of IPv4 address and TCP/UDP port
     const char *delim = strchr(s, ':');
@@ -77,30 +90,47 @@ std::optional<sockaddr_in> Config::parse_address(const char *s) {
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
 
-    char ip_addr_str[INET_ADDRSTRLEN];
-    size_t ip_addr_len = delim - s;
-    if (ip_addr_len > INET_ADDRSTRLEN - 1)
+    std::optional<in_addr> ip_addr = parse_ip_address(s, delim);
+    if (!ip_addr)
+        return {};
+    addr.sin_addr = *ip_addr;
+
+    std::optional<in_port_t> port = parse_port(delim + 1);
+    if (!port)
+        return {};
+    addr.sin_port = *port;
+
+    return addr;
+}
+
+std::optional<in_addr> Config::parse_ip_address(const char *s, const char *end)
+{
+    char addr_str[INET_ADDRSTRLEN];
+    size_t addr_len = end - s;
+    if (addr_len > INET_ADDRSTRLEN - 1)
         return {};
 
-    memcpy(ip_addr_str, s, ip_addr_len);
-    ip_addr_str[ip_addr_len] = '\0';
+    memcpy(addr_str, s, addr_len);
+    addr_str[addr_len] = '\0';
 
-    int ret = inet_pton(AF_INET, ip_addr_str, &addr.sin_addr);
+    in_addr addr;
+    int ret = inet_pton(AF_INET, addr_str, &addr);
     if (ret != 1)
         return {};
 
-    const char *port_str = delim + 1;
-    if (!isdigit(port_str[0]))
+    return addr;
+}
+
+std::optional<in_port_t> Config::parse_port(const char *s) {
+    if (!isdigit(s[0]))
         return {};
 
     char *end;
-    long port = strtol(port_str, &end, 10);
+    long port = strtol(s, &end, 10);
     if (*end != '\0' || port > 0xffff)
         return {};
 
-    addr.sin_port = port;
-
-    return addr;
+    return port;
 }
 
 void Config::show_help() {
