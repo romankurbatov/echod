@@ -9,7 +9,8 @@
 #include <arpa/inet.h>
 
 Config::Config(int argc, char *argv[]) :
-        m_need_help(false)
+        m_need_help(false),
+        m_debug(false)
 {
     m_valid = parse(argc, argv);
 }
@@ -19,11 +20,12 @@ bool Config::parse(int argc, char *argv[]) {
         { "help", no_argument, nullptr, 'h' },
         { "udp", required_argument, nullptr, 'u' },
         { "tcp", required_argument, nullptr, 't' },
+        { "debug", no_argument, nullptr, 'd' },
         {nullptr, 0, nullptr, 0}
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "hu:t:", long_options, nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hu:t:d", long_options, nullptr)) != -1) {
         bool ok;
         switch (opt) {
         case 'h':
@@ -46,6 +48,10 @@ bool Config::parse(int argc, char *argv[]) {
                           << "'" << std::endl;
                 return false;
             }
+            break;
+
+        case 'd':
+            m_debug = true;
             break;
 
         default:

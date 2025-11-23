@@ -14,6 +14,7 @@ public:
 
     bool is_valid() const { return m_valid; }
     bool need_help() const { return m_need_help; }
+    bool debug() const { return m_debug; }
 
     const std::vector<sockaddr_in> &udp_addresses() const {
         return m_udp_addresses;
@@ -36,6 +37,7 @@ private:
 
     bool m_need_help;
     bool m_valid;
+    bool m_debug;
 
     std::vector<sockaddr_in> m_udp_addresses;
     std::vector<sockaddr_in> m_tcp_addresses;
