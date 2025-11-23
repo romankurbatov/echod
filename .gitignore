@@ -1,3 +1,4 @@
 *.o
 echod
 compile_commands.json
+.cache/
