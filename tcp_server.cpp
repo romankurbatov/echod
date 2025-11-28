@@ -9,6 +9,7 @@
 #include <sys/epoll.h>
 
 #include "debug.hpp"
+#include "client.hpp"
 
 TCPServer::TCPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
         m_dispatcher(dispatcher),
@@ -45,6 +46,8 @@ TCPServer::TCPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
 }
 
 TCPServer::~TCPServer() {
+    m_dispatcher.deregister_listener(m_socket_fd);
+
     int ret = close(m_socket_fd);
     if (ret != 0) {
         std::cerr << "close() failed: " << strerror(errno) << std::endl;
@@ -64,9 +67,9 @@ void TCPServer::read_cb(uint32_t events) {
 
     sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    int client_fd = accept(m_socket_fd,
+    int client_fd = accept4(m_socket_fd,
             reinterpret_cast<sockaddr *>(&client_addr),
-            &client_addr_len);
+            &client_addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
     if (client_fd < 0) {
         std::cerr << "TCP server: accept() failed: "
                   << strerror(errno) << std::endl;
@@ -83,5 +86,6 @@ void TCPServer::read_cb(uint32_t events) {
                   << client_addr << " -> " << m_address
                   << Debug::endl;
 
-    close(client_fd);
+    new Client(client_fd, m_dispatcher,
+            client_addr, m_address);
 }

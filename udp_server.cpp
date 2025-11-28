@@ -40,6 +40,8 @@ UDPServer::UDPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
 }
 
 UDPServer::~UDPServer() {
+    m_dispatcher.deregister_listener(m_socket_fd);
+
     int ret = close(m_socket_fd);
     if (ret != 0) {
         std::cerr << "close() failed: " << strerror(errno) << std::endl;

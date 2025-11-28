@@ -50,6 +50,8 @@ void Dispatcher::deregister_listener(int fd) {
         ss << "epoll_ctl(EPOLL_CTL_DEL) failed: " << strerror(errno);
         throw Error(ss.str());
     }
+
+    Debug::stream << "Deregistered listener for fd=" << fd << Debug::endl;
 }
 
 void Dispatcher::run() {
