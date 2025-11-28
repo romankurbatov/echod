@@ -43,6 +43,7 @@ UDPServer::~UDPServer() {
     int ret = close(m_socket_fd);
     if (ret != 0) {
         std::cerr << "close() failed: " << strerror(errno) << std::endl;
+        return;
     }
 
     Debug::stream << "UDP server closed socket fd=" << m_socket_fd
@@ -61,15 +62,14 @@ void UDPServer::read_cb(uint32_t events) {
     ssize_t nrecv = recvfrom(m_socket_fd, m_buffer, sizeof(m_buffer), 0,
             reinterpret_cast<sockaddr *>(&src_addr), &src_addr_len);
     if (nrecv < 0) {
-        std::ostringstream ss;
-        ss << "recvfrom() failed: " << strerror(errno);
-        throw Error(ss.str());
+        std::cerr << "UDP server: recvfrom() failed: "
+                  << strerror(errno) << std::endl;
+        return;
     }
 
     if (src_addr_len != sizeof(src_addr)) {
-        std::ostringstream ss;
-        ss << "src address size mismatch";
-        throw Error(ss.str());
+        std::cerr << "UDP server: address size mismatch" << std::endl;
+        return;
     }
 
     Debug::stream << "Received UDP datagram "
@@ -79,11 +79,11 @@ void UDPServer::read_cb(uint32_t events) {
     ssize_t nsent = sendto(m_socket_fd, m_buffer, nrecv, 0,
             reinterpret_cast<const sockaddr *>(&src_addr), sizeof(src_addr));
     if (nsent < 0) {
-        std::ostringstream ss;
-        ss << "sendto() failed: " << strerror(errno);
-        throw Error(ss.str());
+        std::cerr << "UDP server: sendto() failed: "
+                  << strerror(errno) << std::endl;
+        return;
     } else if (nsent < nrecv) {
-        throw Error("Partial send");
+        std::cerr << "UDP server: partial send" << std::endl;
     }
 
     Debug::stream << "Sent UDP datagram "

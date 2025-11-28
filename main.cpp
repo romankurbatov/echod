@@ -8,6 +8,7 @@
 #include "debug.hpp"
 #include "dispatcher.hpp"
 #include "udp_server.hpp"
+#include "tcp_server.hpp"
 
 void debug_print_udp_addresses(const std::vector<sockaddr_in> &addresses) {
     Debug::stream << "Will listen UDP address(es): ";
@@ -45,12 +46,21 @@ bool run(const Config &config) {
                     std::make_unique<UDPServer>(dispatcher, address));
         }
 
+        std::vector<std::unique_ptr<TCPServer>> tcp_servers;
+        for (const sockaddr_in &address : config.tcp_addresses()) {
+            tcp_servers.emplace_back(
+                    std::make_unique<TCPServer>(dispatcher, address));
+        }
+
         dispatcher.run();
     } catch (const Dispatcher::Error &e) {
         std::cerr << "Dispatcher error: " << e.what() << std::endl;
         return false;
     } catch (const UDPServer::Error &e) {
         std::cerr << "UDP server error: " << e.what() << std::endl;
+        return false;
+    } catch (const TCPServer::Error &e) {
+        std::cerr << "TCP server error: " << e.what() << std::endl;
         return false;
     }
 
