@@ -39,6 +39,8 @@ void Dispatcher::register_listener(int fd, Listener &listener) {
         ss << "epoll_ctl(EPOLL_CTL_ADD) failed: " << strerror(errno);
         throw Error(ss.str());
     }
+
+    Debug::stream << "Registered listener for fd=" << fd << Debug::endl;
 }
 
 void Dispatcher::deregister_listener(int fd) {

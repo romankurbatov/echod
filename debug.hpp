@@ -2,6 +2,9 @@
 #define DEBUG_HPP
 
 #include <iostream>
+#include <netinet/in.h>
+
+std::ostream &operator<<(std::ostream &os, const sockaddr_in &address);
 
 class Debug {
 public:

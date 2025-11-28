@@ -9,23 +9,11 @@
 #include "dispatcher.hpp"
 #include "udp_server.hpp"
 
-void debug_print_address(const sockaddr_in &address) {
-    char ip_addr_str[INET_ADDRSTRLEN];
-    if (!inet_ntop(AF_INET, &address.sin_addr,
-            ip_addr_str, sizeof(ip_addr_str)))
-    {
-        Debug::stream << "??? ";
-        return;
-    }
-
-    Debug::stream << ip_addr_str << ':' << ntohs(address.sin_port) << ' ';
-}
-
 void debug_print_udp_addresses(const std::vector<sockaddr_in> &addresses) {
     Debug::stream << "Will listen UDP address(es): ";
 
     for (const sockaddr_in &address : addresses)
-        debug_print_address(address);
+        Debug::stream << address << ' ';
 
     Debug::stream << Debug::endl;
 }
@@ -34,7 +22,7 @@ void debug_print_tcp_addresses(const std::vector<sockaddr_in> &addresses) {
     Debug::stream << "Will listen TCP address(es): ";
 
     for (const sockaddr_in &address : addresses)
-        debug_print_address(address);
+        Debug::stream << address << ' ';
 
     Debug::stream << Debug::endl;
 }
@@ -73,6 +61,7 @@ int main(int argc, char *argv[]) {
     Config config(argc, argv);
 
     if (!config.is_valid()) {
+        std::cerr << std::endl;
         Config::show_help();
         return EXIT_FAILURE;
     }
@@ -85,6 +74,7 @@ int main(int argc, char *argv[]) {
     if (config.udp_addresses().empty() && config.tcp_addresses().empty()) {
         std::cerr << argv[0] << ": must specify at least one address"
                   << std::endl;
+        std::cerr << std::endl;
         Config::show_help();
         return EXIT_FAILURE;
     }

@@ -13,7 +13,8 @@
 #include "debug.hpp"
 
 UDPServer::UDPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
-        m_dispatcher(dispatcher)
+        m_dispatcher(dispatcher),
+        m_address(address)
 {
     m_socket_fd = socket(PF_INET,
             SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -23,13 +24,17 @@ UDPServer::UDPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
         throw Error(ss.str());
     }
 
-    int ret = bind(m_socket_fd, reinterpret_cast<const sockaddr *>(&address),
+    int ret = bind(m_socket_fd,
+            reinterpret_cast<const sockaddr *>(&address),
             sizeof(address));
     if (ret != 0) {
         std::ostringstream ss;
-        ss << "bind() failed: " << strerror(errno);
+        ss << "bind() to " << address << " failed: " << strerror(errno);
         throw Error(ss.str());
     }
+
+    Debug::stream << "UDP server opened socket fd=" << m_socket_fd
+                  << " to listen " << address << Debug::endl;
 
     dispatcher.register_listener(m_socket_fd, *this);
 }
@@ -39,6 +44,9 @@ UDPServer::~UDPServer() {
     if (ret != 0) {
         std::cerr << "close() failed: " << strerror(errno) << std::endl;
     }
+
+    Debug::stream << "UDP server closed socket fd=" << m_socket_fd
+                  << ", address: " << m_address << Debug::endl;
 }
 
 void UDPServer::read_cb(uint32_t events) {
@@ -60,11 +68,13 @@ void UDPServer::read_cb(uint32_t events) {
 
     if (src_addr_len != sizeof(src_addr)) {
         std::ostringstream ss;
-        ss << "src address size mismatch" << strerror(errno);
+        ss << "src address size mismatch";
         throw Error(ss.str());
     }
 
-    Debug::stream << "Received UDP datagram, length: " << nrecv << Debug::endl;
+    Debug::stream << "Received UDP datagram "
+                  << src_addr << " -> " << m_address
+                  << ", length: " << nrecv << Debug::endl;
 
     ssize_t nsent = sendto(m_socket_fd, m_buffer, nrecv, 0,
             reinterpret_cast<const sockaddr *>(&src_addr), sizeof(src_addr));
@@ -76,5 +86,7 @@ void UDPServer::read_cb(uint32_t events) {
         throw Error("Partial send");
     }
 
-    Debug::stream << "Sent UDP datagram, length: " << nrecv << Debug::endl;
+    Debug::stream << "Sent UDP datagram "
+                  << m_address << " -> " << src_addr
+                  << ", length: " << nsent << Debug::endl;
 }

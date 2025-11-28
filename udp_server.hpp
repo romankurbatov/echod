@@ -28,6 +28,7 @@ private:
     Dispatcher &m_dispatcher;
     int m_socket_fd;
     char m_buffer[10240];
+    const sockaddr_in m_address;
 };
 
 #endif // UDP_SERVER_HPP

@@ -141,7 +141,12 @@ std::optional<in_port_t> Config::parse_port(const char *s) {
 
 void Config::show_help() {
     std::cerr << "echod -- echo server with several commands" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Parameters:" << std::endl;
     std::cerr << "-h|--help -- print this message" << std::endl;
     std::cerr << "-u|--udp <address> -- UDP address to listen" << std::endl;
     std::cerr << "-t|--tcp <address> -- TCP address to listen" << std::endl;
+    std::cerr << "-d|--debug -- enable debug output" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Multiple TCP/UDP addresses may be specified" << std::endl;
 }
