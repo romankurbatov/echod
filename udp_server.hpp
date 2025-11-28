@@ -25,9 +25,13 @@ public:
     };
 
 private:
+    void send_response(const char *rsp, size_t len, const sockaddr_in &address);
+    void process_command(const char *cmd, size_t len, const sockaddr_in &address);
+
     Dispatcher &m_dispatcher;
     int m_socket_fd;
-    char m_buffer[10240];
+    char m_input_buf[10240];
+    char m_output_buf[128]; // for command response only
     const sockaddr_in m_address;
 };
 
