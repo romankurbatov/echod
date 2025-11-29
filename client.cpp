@@ -7,13 +7,15 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 
+#include "command_executor.hpp"
 #include "debug.hpp"
 
-Client::Client(int fd, Dispatcher &dispatcher,
+Client::Client(int fd, Dispatcher &dispatcher, CommandExecutor &executor,
         const sockaddr_in &client_address,
         const sockaddr_in &server_address) :
     m_socket_fd(fd),
     m_dispatcher(dispatcher),
+    m_executor(executor),
     m_client_address(client_address),
     m_server_address(server_address),
     m_state(State::OUT),
@@ -66,7 +68,7 @@ void Client::read_cb(uint32_t events) {
 
     bool ok = process_messages(m_buffer, nrecv);
     if (!ok) {
-        // Some error - disconnect
+        // Some error -- disconnect
         delete this;
     }
 }
@@ -122,6 +124,9 @@ bool Client::process_messages(const char *buf, size_t len) {
                     // Command received in full
                     std::string cmd(m_command_buf.data(), m_command_buf_len-1);
                     Debug::stream << "TCP client command: " << cmd << Debug::endl;
+                    bool ok = handle_command(m_command_buf, m_command_buf_len);
+                    if (!ok)
+                        return false;
                     m_command_buf_len = 0;
                 }
             }
@@ -153,6 +158,26 @@ bool Client::send_response(const char *buf, size_t len) {
                   << m_socket_fd << ' '
                   << m_server_address << " -> "
                   << m_client_address << Debug::endl;
+
+    return true;
+}
+
+bool Client::handle_command(
+        const CommandExecutor::command_buffer_t &cmd, size_t len)
+{
+    std::string rsp;
+    CommandExecutor::Result result = m_executor.execute(cmd, len, rsp);
+    switch (result) {
+    case CommandExecutor::Result::OK:
+        return send_response(rsp.data(), rsp.length());
+    case CommandExecutor::Result::INVALID_COMMAND:
+        std::cerr << "Client command processing internal error" << std::endl;
+        break;
+    case CommandExecutor::Result::UNKNOWN_COMMAND:
+        return send_response(rsp.data(), rsp.length());
+    case CommandExecutor::Result::SHUTDOWN:
+        return false; // will cause disconnect
+    }
 
     return true;
 }

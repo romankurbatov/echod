@@ -8,12 +8,15 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
+#include "command_executor.hpp"
 #include "debug.hpp"
 #include "client.hpp"
 
-TCPServer::TCPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
-        m_dispatcher(dispatcher),
-        m_address(address)
+TCPServer::TCPServer(Dispatcher &dispatcher,
+        CommandExecutor &executor, const sockaddr_in &address) :
+    m_dispatcher(dispatcher),
+    m_executor(executor),
+    m_address(address)
 {
     m_socket_fd = socket(PF_INET,
             SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -86,6 +89,6 @@ void TCPServer::read_cb(uint32_t events) {
                   << client_addr << " -> " << m_address
                   << Debug::endl;
 
-    new Client(client_fd, m_dispatcher,
+    new Client(client_fd, m_dispatcher, m_executor,
             client_addr, m_address);
 }

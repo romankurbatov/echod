@@ -7,10 +7,12 @@
 #include <netinet/in.h>
 
 #include "dispatcher.hpp"
+#include "command_executor.hpp"
 
 class TCPServer : public Listener {
 public:
-    TCPServer(Dispatcher &dispatcher, const sockaddr_in &address);
+    TCPServer(Dispatcher &dispatcher,
+            CommandExecutor &executor, const sockaddr_in &address);
     ~TCPServer();
 
     TCPServer(const TCPServer &) = delete;
@@ -26,6 +28,7 @@ public:
 
 private:
     Dispatcher &m_dispatcher;
+    CommandExecutor &m_executor;
     int m_socket_fd;
     const sockaddr_in m_address;
 };

@@ -6,10 +6,11 @@
 
 #include "listener.hpp"
 #include "dispatcher.hpp"
+#include "command_executor.hpp"
 
 class Client : public Listener {
 public:
-    Client(int fd, Dispatcher &dispatcher,
+    Client(int fd, Dispatcher &dispatcher, CommandExecutor &executor,
             const sockaddr_in &client_address,
             const sockaddr_in &server_address);
 
@@ -28,10 +29,13 @@ public:
 
 private:
     bool process_messages(const char *buf, size_t len);
+    bool handle_command(
+            const CommandExecutor::command_buffer_t &cmd, size_t len);
     bool send_response(const char *buf, size_t len);
 
     int m_socket_fd;
     Dispatcher &m_dispatcher;
+    CommandExecutor &m_executor;
     const sockaddr_in m_client_address;
     const sockaddr_in m_server_address;
     char m_buffer[1024];
@@ -45,7 +49,7 @@ private:
 
     State m_state;
 
-    std::array<char, 16> m_command_buf;
+    CommandExecutor::command_buffer_t m_command_buf;
     size_t m_command_buf_len;
 };
 
