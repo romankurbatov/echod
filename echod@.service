@@ -1,0 +1,11 @@
+[Unit]
+Description=echo server with several commands
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+ExecStart=echod -t 0.0.0.0:%i -u 0.0.0.0:%i
+
+[Install]
+WantedBy=multi-user.target

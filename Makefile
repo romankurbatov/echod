@@ -8,6 +8,7 @@ objects := main.o config.o debug.o dispatcher.o \
 	command_executor.o client_registry.o
 
 exe := echod
+service := echod@.service
 
 $(objects): %.o: %.cpp $(headers)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
@@ -20,11 +21,12 @@ all: $(exe)
 clean:
 	rm -f $(objects) $(exe)
 
-install: $(exe)
+install: $(exe) $(service)
 	install -D $(exe) $(DESTDIR)/bin/$(exe)
+	install -D $(service) $(DESTDIR)/lib/systemd/system/$(service)
 
 uninstall:
-	rm -f $(DESTDIR)/bin/$(exe)
+	rm -f $(DESTDIR)/bin/$(exe) $(DESTDIR)/lib/systemd/system/$(service)
 
 .DEFAULT_GOAL := all
 .PHONY: all clean install
