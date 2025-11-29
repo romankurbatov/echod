@@ -8,14 +8,17 @@
 #include <sys/epoll.h>
 
 #include "command_executor.hpp"
+#include "client_registry.hpp"
 #include "debug.hpp"
 
-Client::Client(int fd, Dispatcher &dispatcher, CommandExecutor &executor,
+Client::Client(int fd, Dispatcher &dispatcher,
+        CommandExecutor &executor, ClientRegistry &registry,
         const sockaddr_in &client_address,
         const sockaddr_in &server_address) :
     m_socket_fd(fd),
     m_dispatcher(dispatcher),
     m_executor(executor),
+    m_registry(registry),
     m_client_address(client_address),
     m_server_address(server_address),
     m_state(State::OUT),
@@ -44,7 +47,7 @@ void Client::read_cb(uint32_t events) {
         Debug::stream << "Error/hangup on TCP connection fd=" << m_socket_fd
                       << ' ' << m_client_address << " -> " << m_server_address
                       << Debug::endl;
-        delete this;
+        m_registry.client_disconnected(this);
         return;
     }
 
@@ -57,7 +60,7 @@ void Client::read_cb(uint32_t events) {
     } else if (nrecv == 0) {
         std::cerr << "Client fd=" << m_socket_fd << ' ' << m_client_address
                   << " disconnected" << std::endl;
-        delete this;
+        m_registry.client_disconnected(this);
         return;
     }
 
@@ -69,7 +72,7 @@ void Client::read_cb(uint32_t events) {
     bool ok = process_messages(m_buffer, nrecv);
     if (!ok) {
         // Some error -- disconnect
-        delete this;
+        m_registry.client_disconnected(this);
     }
 }
 

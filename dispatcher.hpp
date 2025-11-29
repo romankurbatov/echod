@@ -5,6 +5,8 @@
 
 #include "listener.hpp"
 
+class ClientRegistry;
+
 class Dispatcher {
 public:
     Dispatcher();
@@ -12,6 +14,8 @@ public:
 
     Dispatcher(const Dispatcher &) = delete;
     void operator=(const Dispatcher &) = delete;
+
+    void set_registry(ClientRegistry *registry);
 
     void register_listener(int fd, Listener &listener);
     void deregister_listener(int fd);
@@ -25,6 +29,7 @@ public:
     };
 
 private:
+    ClientRegistry *m_registry;
     int m_epoll_fd;
 };
 

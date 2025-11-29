@@ -8,11 +8,12 @@
 
 #include "dispatcher.hpp"
 #include "command_executor.hpp"
+#include "client_registry.hpp"
 
 class TCPServer : public Listener {
 public:
-    TCPServer(Dispatcher &dispatcher,
-            CommandExecutor &executor, const sockaddr_in &address);
+    TCPServer(Dispatcher &dispatcher, CommandExecutor &executor,
+            ClientRegistry &registry, const sockaddr_in &address);
     ~TCPServer();
 
     TCPServer(const TCPServer &) = delete;
@@ -29,6 +30,7 @@ public:
 private:
     Dispatcher &m_dispatcher;
     CommandExecutor &m_executor;
+    ClientRegistry &m_registry;
     int m_socket_fd;
     const sockaddr_in m_address;
 };

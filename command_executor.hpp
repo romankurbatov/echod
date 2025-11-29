@@ -6,12 +6,16 @@
 #include <unordered_map>
 #include <stddef.h>
 
+class ClientRegistry;
+
 class CommandExecutor {
 public:
-    CommandExecutor() {}
+    CommandExecutor();
 
     CommandExecutor(const CommandExecutor &) = delete;
     CommandExecutor &operator=(const CommandExecutor &) = delete;
+
+    void set_registry(ClientRegistry *registry);
 
     static const size_t max_command_len = 16;
     using command_buffer_t = std::array<char, max_command_len>;
@@ -27,6 +31,8 @@ public:
             std::string &rsp);
 
 private:
+    ClientRegistry *m_registry;
+
     enum class Command {
         TIME,
         STATS,

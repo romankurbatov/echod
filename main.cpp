@@ -10,6 +10,7 @@
 #include "udp_server.hpp"
 #include "tcp_server.hpp"
 #include "command_executor.hpp"
+#include "client_registry.hpp"
 
 void debug_print_udp_addresses(const std::vector<sockaddr_in> &addresses) {
     Debug::stream << "Will listen UDP address(es): ";
@@ -41,6 +42,10 @@ bool run(const Config &config) {
     try {
         Dispatcher dispatcher;
         CommandExecutor executor;
+        ClientRegistry registry(dispatcher, executor);
+
+        dispatcher.set_registry(&registry);
+        executor.set_registry(&registry);
 
         std::vector<std::unique_ptr<UDPServer>> udp_servers;
         for (const sockaddr_in &address : config.udp_addresses()) {
@@ -51,7 +56,8 @@ bool run(const Config &config) {
         std::vector<std::unique_ptr<TCPServer>> tcp_servers;
         for (const sockaddr_in &address : config.tcp_addresses()) {
             tcp_servers.emplace_back(
-                    std::make_unique<TCPServer>(dispatcher, executor, address));
+                    std::make_unique<TCPServer>(
+                            dispatcher, executor, registry, address));
         }
 
         dispatcher.run();

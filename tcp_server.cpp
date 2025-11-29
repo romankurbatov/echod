@@ -1,6 +1,5 @@
 #include "tcp_server.hpp"
 
-#include <netinet/in.h>
 #include <sstream>
 #include <errno.h>
 #include <string.h>
@@ -8,14 +7,13 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
-#include "command_executor.hpp"
 #include "debug.hpp"
-#include "client.hpp"
 
-TCPServer::TCPServer(Dispatcher &dispatcher,
-        CommandExecutor &executor, const sockaddr_in &address) :
+TCPServer::TCPServer(Dispatcher &dispatcher, CommandExecutor &executor,
+        ClientRegistry &registry, const sockaddr_in &address) :
     m_dispatcher(dispatcher),
     m_executor(executor),
+    m_registry(registry),
     m_address(address)
 {
     m_socket_fd = socket(PF_INET,
@@ -89,6 +87,6 @@ void TCPServer::read_cb(uint32_t events) {
                   << client_addr << " -> " << m_address
                   << Debug::endl;
 
-    new Client(client_fd, m_dispatcher, m_executor,
+    m_registry.handle_client(client_fd,
             client_addr, m_address);
 }

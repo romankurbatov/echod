@@ -8,8 +8,11 @@
 #include <sys/epoll.h>
 
 #include "debug.hpp"
+#include "client_registry.hpp"
 
-Dispatcher::Dispatcher() {
+Dispatcher::Dispatcher() :
+    m_registry(nullptr)
+{
     m_epoll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (m_epoll_fd < 0) {
         std::ostringstream ss;
@@ -23,6 +26,10 @@ Dispatcher::~Dispatcher() {
     if (ret != 0) {
         std::cerr << "close() failed: " << strerror(errno) << std::endl;
     }
+}
+
+void Dispatcher::set_registry(ClientRegistry *registry) {
+    m_registry = registry;
 }
 
 void Dispatcher::register_listener(int fd, Listener &listener) {
@@ -55,18 +62,22 @@ void Dispatcher::deregister_listener(int fd) {
 }
 
 void Dispatcher::run() {
-    epoll_event event;
-    int ret;
+    for (;;) {
+        if (m_registry)
+            m_registry->clear_disconnected_clients();
 
-    while ((ret = epoll_wait(m_epoll_fd, &event, 1, -1)) > 0) {
-        Debug::stream << "New event" << Debug::endl;
-        Listener *listener = static_cast<Listener *>(event.data.ptr);
-        listener->read_cb(event.events);
-    }
+        epoll_event event;
+        int ret = epoll_wait(m_epoll_fd, &event, 1, -1);
+        if (ret < 0) {
+            std::ostringstream ss;
+            ss << "epoll_wait failed: " << strerror(errno);
+            throw Error(ss.str());
+        }
 
-    if (ret < 0) {
-        std::ostringstream ss;
-        ss << "epoll_wait failed: " << strerror(errno);
-        throw Error(ss.str());
+        if (ret > 0) {
+            Debug::stream << "New event" << Debug::endl;
+            Listener *listener = static_cast<Listener *>(event.data.ptr);
+            listener->read_cb(event.events);
+        }
     }
 }

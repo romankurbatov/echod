@@ -5,6 +5,17 @@
 #include <iomanip>
 #include <time.h>
 
+#include "client_registry.hpp"
+
+CommandExecutor::CommandExecutor() :
+    m_registry(nullptr)
+{
+}
+
+void CommandExecutor::set_registry(ClientRegistry *registry) {
+    m_registry = registry;
+}
+
 CommandExecutor::Result CommandExecutor::execute(
         const command_buffer_t &cmd_buf, size_t cmd_len, std::string &rsp)
 {
@@ -55,5 +66,16 @@ void CommandExecutor::execute_time_command(std::string &rsp) {
 }
 
 void CommandExecutor::execute_stats_command(std::string &rsp) {
-    rsp = "Not implemented yet\n";
+    if (!m_registry) {
+        std::cerr << "CommandExecutor: client registry not set" << std::endl;
+        rsp = "Internal server error\n";
+        return;
+    }
+
+    long connected = 0, total = 0;
+    m_registry->get_stats(connected, total);
+
+    std::ostringstream ss;
+    ss << "Clients connected: " << connected << ", total: " << total << '\n';
+    rsp = ss.str();
 }
