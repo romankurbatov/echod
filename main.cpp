@@ -50,7 +50,8 @@ bool run(const Config &config) {
         std::vector<std::unique_ptr<UDPServer>> udp_servers;
         for (const sockaddr_in &address : config.udp_addresses()) {
             udp_servers.emplace_back(
-                    std::make_unique<UDPServer>(dispatcher, address));
+                    std::make_unique<UDPServer>(
+                            dispatcher, executor, address));
         }
 
         std::vector<std::unique_ptr<TCPServer>> tcp_servers;

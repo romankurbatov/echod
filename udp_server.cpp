@@ -11,12 +11,15 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
+#include "command_executor.hpp"
 #include "dispatcher.hpp"
 #include "debug.hpp"
 
-UDPServer::UDPServer(Dispatcher &dispatcher, const sockaddr_in &address) :
-        m_dispatcher(dispatcher),
-        m_address(address)
+UDPServer::UDPServer(Dispatcher &dispatcher, CommandExecutor &executor,
+        const sockaddr_in &address) :
+    m_dispatcher(dispatcher),
+    m_executor(executor),
+    m_address(address)
 {
     m_socket_fd = socket(PF_INET,
             SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
@@ -84,7 +87,7 @@ void UDPServer::read_cb(uint32_t events) {
         return;
 
     if (m_input_buf[0] == '/') {
-        process_command(m_input_buf + 1, nrecv - 1, src_addr);
+        process_command(m_input_buf, nrecv, src_addr);
     } else {
         send_response(m_input_buf, nrecv, src_addr);
     }
@@ -110,21 +113,31 @@ void UDPServer::send_response(
 }
 
 void UDPServer::process_command(
-        const char *cmd, size_t len, const sockaddr_in &address)
+        const char *buf, size_t len, const sockaddr_in &address)
 {
-    static const char TIME_CMD[] = "time\n";
-    if (len == sizeof(TIME_CMD)-1 && memcmp(cmd, TIME_CMD, len) == 0) {
-        time_t now = time(nullptr);
-        tm now_broken;
-        localtime_r(&now, &now_broken);
+    CommandExecutor::command_buffer_t cmd;
+    if (len > cmd.size()) {
+        const char TOO_LONG_RSP[] = "Command too long\n";
+        send_response(TOO_LONG_RSP, sizeof(TOO_LONG_RSP) - 1, address);
+        return;
+    }
 
-        std::ostringstream ss;
-        ss << std::put_time(&now_broken, "%Y-%m-%d %H:%M:%S") << '\n';
-
-        std::string now_str = ss.str();
-        send_response(now_str.data(), now_str.length(), address);
-    } else {
-        std::cerr << "Unknown command from " << address << std::endl;
-        send_response("?\n", 2, address);
+    memcpy(cmd.data(), buf, len);
+    std::string rsp;
+    CommandExecutor::Result result = m_executor.execute(cmd, len, rsp);
+    switch (result) {
+    case CommandExecutor::Result::OK:
+    case CommandExecutor::Result::UNKNOWN_COMMAND:
+        send_response(rsp.data(), rsp.length(), address);
+        break;
+    case CommandExecutor::Result::INVALID_COMMAND:
+        std::cerr << "UDP server command processing internal error"
+                  << std::endl;
+        send_response(rsp.data(), rsp.length(), address);
+        break;
+    case CommandExecutor::Result::SHUTDOWN:
+        rsp = "Shutdown not supported for UDP\n";
+        send_response(rsp.data(), rsp.length(), address);
+        break;
     }
 }

@@ -7,10 +7,12 @@
 #include <netinet/in.h>
 
 #include "dispatcher.hpp"
+#include "command_executor.hpp"
 
 class UDPServer : public Listener {
 public:
-    UDPServer(Dispatcher &dispatcher, const sockaddr_in &address);
+    UDPServer(Dispatcher &dispatcher, CommandExecutor &executor,
+            const sockaddr_in &address);
     ~UDPServer();
 
     UDPServer(const UDPServer &) = delete;
@@ -29,6 +31,7 @@ private:
     void process_command(const char *cmd, size_t len, const sockaddr_in &address);
 
     Dispatcher &m_dispatcher;
+    CommandExecutor &m_executor;
     int m_socket_fd;
     char m_input_buf[10240];
     char m_output_buf[128]; // for command response only

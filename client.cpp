@@ -172,15 +172,14 @@ bool Client::handle_command(
     CommandExecutor::Result result = m_executor.execute(cmd, len, rsp);
     switch (result) {
     case CommandExecutor::Result::OK:
-        return send_response(rsp.data(), rsp.length());
+    case CommandExecutor::Result::UNKNOWN_COMMAND:
+        break;
     case CommandExecutor::Result::INVALID_COMMAND:
         std::cerr << "Client command processing internal error" << std::endl;
         break;
-    case CommandExecutor::Result::UNKNOWN_COMMAND:
-        return send_response(rsp.data(), rsp.length());
     case CommandExecutor::Result::SHUTDOWN:
         return false; // will cause disconnect
     }
 
-    return true;
+    return send_response(rsp.data(), rsp.length());
 }
