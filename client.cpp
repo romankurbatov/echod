@@ -1,6 +1,7 @@
 #include "client.hpp"
 
 #include <iostream>
+#include <string>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -14,7 +15,9 @@ Client::Client(int fd, Dispatcher &dispatcher,
     m_socket_fd(fd),
     m_dispatcher(dispatcher),
     m_client_address(client_address),
-    m_server_address(server_address)
+    m_server_address(server_address),
+    m_state(State::OUT),
+    m_command_buf_len(0)
 {
     dispatcher.register_listener(fd, *this);
 }
@@ -61,22 +64,95 @@ void Client::read_cb(uint32_t events) {
                   << m_client_address << " -> "
                   << m_server_address << Debug::endl;
 
-    ssize_t nsent = write(m_socket_fd, m_buffer, nrecv);
+    bool ok = process_messages(m_buffer, nrecv);
+    if (!ok) {
+        // Some error - disconnect
+        delete this;
+    }
+}
+
+bool Client::process_messages(const char *buf, size_t len) {
+    // There are may be one or more messages in received data.
+    // First and last ones may be incomplete
+
+    const char *part_begin = buf;
+    const char *data_end = buf + len;
+    while (part_begin < data_end) {
+        // Find end of current message (or message part).
+        // May be NULL if current message is not yet received in full
+        const char *part_end = static_cast<const char *>(
+                memchr(part_begin, '\n', data_end - part_begin));
+        bool full = (part_end != nullptr);
+        if (full) {
+            part_end++; // include '\n' into message
+        } else {
+            part_end = data_end;
+        }
+
+        size_t part_len = part_end - part_begin;
+
+        if (m_state == State::SKIP_MSG)
+            goto next_part;
+
+        if (m_state == State::OUT) {
+            m_state = ((*part_begin == '/') ?
+                    State::IN_COMMAND :
+                    State::IN_ECHO_MSG);
+        }
+
+        if (m_state == State::IN_ECHO_MSG) {
+            bool ok = send_response(part_begin, part_len);
+            if (!ok)
+                return false;
+        } else if (m_state == State::IN_COMMAND) {
+            if (m_command_buf_len + part_len > m_command_buf.size()) {
+                // Command too long
+                m_state = State::SKIP_MSG;
+                const char TOO_LONG_RSP[] = "Command too long\n";
+                bool ok = send_response(TOO_LONG_RSP, sizeof(TOO_LONG_RSP) - 1);
+                if (!ok)
+                    return false;
+            } else {
+                // Copy part of command into command buffer
+                memcpy(m_command_buf.data() + m_command_buf_len,
+                        part_begin, part_len);
+                m_command_buf_len += part_len;
+
+                if (full) {
+                    // Command received in full
+                    std::string cmd(m_command_buf.data(), m_command_buf_len-1);
+                    Debug::stream << "TCP client command: " << cmd << Debug::endl;
+                    m_command_buf_len = 0;
+                }
+            }
+        }
+
+    next_part:
+        part_begin += part_len;
+        if (full)
+            m_state = State::OUT;
+    }
+
+    return true;
+}
+
+bool Client::send_response(const char *buf, size_t len) {
+    ssize_t nsent = write(m_socket_fd, buf, len);
     if (nsent < 0) {
         std::cerr << "Failed to write to TCP connection fd=" << m_socket_fd
                   << " with " << m_client_address
                   << ": " << strerror(errno) << std::endl;
-        delete this;
-        return;
-    } else if (nsent != nrecv) {
+        return false;
+    } else if (static_cast<size_t>(nsent) != len) {
         std::cerr << "Partial write to TCP connection fd=" << m_socket_fd
                   << " with " << m_client_address << std::endl;
-        delete this;
-        return;
+        return false;
     }
 
     Debug::stream << "Sent " << nsent << " bytes to TCP client fd="
                   << m_socket_fd << ' '
                   << m_server_address << " -> "
                   << m_client_address << Debug::endl;
+
+    return true;
 }
