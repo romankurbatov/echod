@@ -58,8 +58,8 @@ void Client::read_cb(uint32_t events) {
                   ": " << strerror(errno) << std::endl;
         return;
     } else if (nrecv == 0) {
-        std::cerr << "Client fd=" << m_socket_fd << ' ' << m_client_address
-                  << " disconnected" << std::endl;
+        Debug::stream << "Client fd=" << m_socket_fd << ' ' << m_client_address
+                      << " disconnected" << Debug::endl;
         m_registry.client_disconnected(this);
         return;
     }

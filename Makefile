@@ -1,4 +1,5 @@
 CXXFLAGS := $(CXXFLAGS) -std=c++17 -Wall -Werror
+DESTDIR ?= /usr/local
 
 headers := $(wildcard *.h *.hpp)
 
@@ -19,5 +20,11 @@ all: $(exe)
 clean:
 	rm -f $(objects) $(exe)
 
+install: $(exe)
+	install -D $(exe) $(DESTDIR)/bin/$(exe)
+
+uninstall:
+	rm -f $(DESTDIR)/bin/$(exe)
+
 .DEFAULT_GOAL := all
-.PHONY: all clean
+.PHONY: all clean install
