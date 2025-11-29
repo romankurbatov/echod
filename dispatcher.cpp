@@ -4,6 +4,7 @@
 #include <sstream>
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 
@@ -62,13 +63,22 @@ void Dispatcher::deregister_listener(int fd) {
 }
 
 void Dispatcher::run() {
+    sigset_t mask;
+    sigemptyset(&mask);
+
     for (;;) {
         if (m_registry)
             m_registry->clear_disconnected_clients();
 
         epoll_event event;
-        int ret = epoll_wait(m_epoll_fd, &event, 1, -1);
+        int ret = epoll_pwait(m_epoll_fd,
+                &event, 1, -1, &mask);
         if (ret < 0) {
+            if (errno == EINTR) {
+                Debug::stream << "Exiting main event loop" << Debug::endl;
+                break;
+            }
+
             std::ostringstream ss;
             ss << "epoll_wait failed: " << strerror(errno);
             throw Error(ss.str());

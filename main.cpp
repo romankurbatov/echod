@@ -1,7 +1,13 @@
+#include <csignal>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <netinet/in.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
+#include <string.h>
+#include <strings.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "config.hpp"
@@ -76,7 +82,50 @@ bool run(const Config &config) {
     return true;
 }
 
+void handle_signal(int) {
+}
+
+bool init_signals() {
+    // Mask SIGINT and SIGTERM. They will be unmasked
+    // while process will be blocked on epoll_pwait()
+    sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    sigaddset(&mask, SIGTERM);
+    int ret = sigprocmask(SIG_SETMASK, &mask, nullptr);
+    if (ret != 0) {
+        std::cerr << "sigprocmask() failed: "
+                  << strerror(errno) << std::endl;
+        return false;
+    }
+
+    struct sigaction sa;
+    bzero(&sa, sizeof(sa));
+    sa.sa_handler = &handle_signal;
+    sigemptyset(&sa.sa_mask);
+
+    ret = sigaction(SIGINT, &sa, nullptr);
+    if (ret != 0) {
+        std::cerr << "sigaction(SIGINT) failed: "
+                  << strerror(errno) << std::endl;
+        return false;
+    }
+
+    ret = sigaction(SIGTERM, &sa, nullptr);
+    if (ret != 0) {
+        std::cerr << "sigaction(SIGTERM) failed: "
+                  << strerror(errno) << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 int main(int argc, char *argv[]) {
+    bool ok = init_signals();
+    if (!ok)
+        return EXIT_FAILURE;
+
     Config config(argc, argv);
 
     if (!config.is_valid()) {
