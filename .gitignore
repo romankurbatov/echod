@@ -2,3 +2,5 @@
 echod
 compile_commands.json
 .cache/
+echod_*/
+echod_*.deb
