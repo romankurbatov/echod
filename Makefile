@@ -29,4 +29,4 @@ uninstall:
 	rm -f $(DESTDIR)/bin/$(exe) $(DESTDIR)/lib/systemd/system/$(service)
 
 .DEFAULT_GOAL := all
-.PHONY: all clean install
+.PHONY: all clean install uninstall
