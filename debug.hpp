@@ -14,7 +14,7 @@ public:
     static const endl_t endl;
 
     Debug(const Debug &) = delete;
-    void operator=(const Debug &) = delete;
+    Debug &operator=(const Debug &) = delete;
 
     template<typename T>
     Debug &operator<<(const T &v) {

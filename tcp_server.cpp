@@ -72,7 +72,7 @@ void TCPServer::read_cb(uint32_t events) {
             reinterpret_cast<sockaddr *>(&client_addr),
             &client_addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
     if (client_fd < 0) {
-        std::cerr << "TCP server: accept() failed: "
+        std::cerr << "TCP server: accept4() failed: "
                   << strerror(errno) << std::endl;
         return;
     }
@@ -83,7 +83,7 @@ void TCPServer::read_cb(uint32_t events) {
         return;
     }
 
-    Debug::stream << "New TCP connection "
+    Debug::stream << "New TCP connection fd=" << client_fd << ' '
                   << client_addr << " -> " << m_address
                   << Debug::endl;
 

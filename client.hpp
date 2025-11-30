@@ -44,9 +44,16 @@ private:
     char m_buffer[1024];
 
     enum class State {
+        // Wait for new message
         OUT,
+
+        // Wait for continuation of current message:
+
+        // Current message is an ordinal echo message
         IN_ECHO_MSG,
+        // Current message is a command
         IN_COMMAND,
+        // Current message is a bad (too long) command, skip it
         SKIP_MSG,
     };
 

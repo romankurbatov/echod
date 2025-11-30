@@ -20,6 +20,9 @@ Dispatcher::Dispatcher() :
         ss << "epoll_create1() failed: " << strerror(errno);
         throw Error(ss.str());
     }
+
+    Debug::stream << "Dispatcher opened epoll fd="
+                  << m_epoll_fd << Debug::endl;
 }
 
 Dispatcher::~Dispatcher() {
@@ -27,6 +30,9 @@ Dispatcher::~Dispatcher() {
     if (ret != 0) {
         std::cerr << "close() failed: " << strerror(errno) << std::endl;
     }
+
+    Debug::stream << "Dispatcher closed epoll fd="
+                  << m_epoll_fd << Debug::endl;
 }
 
 void Dispatcher::set_registry(ClientRegistry *registry) {
@@ -70,24 +76,24 @@ void Dispatcher::run() {
         if (m_registry)
             m_registry->clear_disconnected_clients();
 
-        epoll_event event;
-        int ret = epoll_pwait(m_epoll_fd,
-                &event, 1, -1, &mask);
-        if (ret < 0) {
+        epoll_event events[16];
+        int nevents = epoll_pwait(m_epoll_fd,
+                events, std::size(events), -1, &mask);
+        if (nevents < 0) {
             if (errno == EINTR) {
                 Debug::stream << "Exiting main event loop" << Debug::endl;
                 break;
             }
 
             std::ostringstream ss;
-            ss << "epoll_wait failed: " << strerror(errno);
+            ss << "epoll_pwait failed: " << strerror(errno);
             throw Error(ss.str());
         }
 
-        if (ret > 0) {
-            Debug::stream << "New event" << Debug::endl;
-            Listener *listener = static_cast<Listener *>(event.data.ptr);
-            listener->read_cb(event.events);
+        for (int i = 0; i < nevents; i++) {
+            Debug::stream << "Dispatcher: new event" << Debug::endl;
+            Listener *listener = static_cast<Listener *>(events[i].data.ptr);
+            listener->read_cb(events[i].events);
         }
     }
 }

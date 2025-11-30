@@ -21,13 +21,13 @@ CommandExecutor::Result CommandExecutor::execute(
 {
     if (cmd_len < 1) {
         std::cerr << "Command too short" << std::endl;
-        rsp = "Internal server error \n";
+        rsp = "Internal server error\n";
         return Result::INVALID_COMMAND;
     }
 
     if (cmd_buf[0] != '/') {
         std::cerr << "Command not starting with '/'" << std::endl;
-        rsp = "Internal server error \n";
+        rsp = "Internal server error\n";
         return Result::INVALID_COMMAND;
     }
 
@@ -50,6 +50,7 @@ CommandExecutor::Result CommandExecutor::execute(
         execute_stats_command(rsp);
         break;
     case Command::SHUTDOWN:
+        rsp = "Good bye!";
         return Result::SHUTDOWN;
     }
 

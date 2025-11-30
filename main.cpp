@@ -118,6 +118,10 @@ bool init_signals() {
         return false;
     }
 
+    // Ignore SIGPIPE to prevent program termination
+    // on write to connection which is closed by peer
+    signal(SIGPIPE, SIG_IGN);
+
     return true;
 }
 

@@ -13,13 +13,14 @@ public:
     ~Dispatcher();
 
     Dispatcher(const Dispatcher &) = delete;
-    void operator=(const Dispatcher &) = delete;
+    Dispatcher &operator=(const Dispatcher &) = delete;
 
     void set_registry(ClientRegistry *registry);
 
     void register_listener(int fd, Listener &listener);
     void deregister_listener(int fd);
 
+    // Run main event loop
     void run();
 
     class Error : public std::runtime_error {

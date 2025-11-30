@@ -10,7 +10,7 @@ public:
     Config(int argc, char *argv[]);
 
     Config(const Config &) = delete;
-    void operator=(const Config &) = delete;
+    Config &operator=(const Config &) = delete;
 
     bool is_valid() const { return m_valid; }
     bool need_help() const { return m_need_help; }

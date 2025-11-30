@@ -25,7 +25,9 @@ bool Config::parse(int argc, char *argv[]) {
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "hu:t:d", long_options, nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hu:t:d",
+            long_options, nullptr)) != -1)
+    {
         bool ok;
         switch (opt) {
         case 'h':
@@ -148,5 +150,7 @@ void Config::show_help() {
     std::cerr << "-t|--tcp <address> -- TCP address to listen" << std::endl;
     std::cerr << "-d|--debug -- enable debug output" << std::endl;
     std::cerr << std::endl;
+    std::cerr << "Address must be given in format: <IPv4-address>:<port>," << std::endl;
+    std::cerr << "for example: 127.0.0.1:13579" << std::endl;
     std::cerr << "Multiple TCP/UDP addresses may be specified" << std::endl;
 }

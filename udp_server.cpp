@@ -1,7 +1,6 @@
 #include "udp_server.hpp"
 
 #include <iostream>
-#include <iomanip>
 #include <netinet/in.h>
 #include <sstream>
 #include <errno.h>
@@ -87,7 +86,7 @@ void UDPServer::read_cb(uint32_t events) {
         return;
 
     if (m_input_buf[0] == '/') {
-        process_command(m_input_buf, nrecv, src_addr);
+        handle_command(m_input_buf, nrecv, src_addr);
     } else {
         send_response(m_input_buf, nrecv, src_addr);
     }
@@ -112,7 +111,7 @@ void UDPServer::send_response(
                   << ", length: " << nsent << Debug::endl;
 }
 
-void UDPServer::process_command(
+void UDPServer::handle_command(
         const char *buf, size_t len, const sockaddr_in &address)
 {
     CommandExecutor::command_buffer_t cmd;

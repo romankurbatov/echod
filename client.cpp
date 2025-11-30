@@ -71,7 +71,7 @@ void Client::read_cb(uint32_t events) {
 
     bool ok = process_messages(m_buffer, nrecv);
     if (!ok) {
-        // Some error -- disconnect
+        // Some error or shutdown command -- disconnect
         m_registry.client_disconnected(this);
     }
 }
@@ -178,6 +178,7 @@ bool Client::handle_command(
         std::cerr << "Client command processing internal error" << std::endl;
         break;
     case CommandExecutor::Result::SHUTDOWN:
+        send_response(rsp.data(), rsp.length());
         return false; // will cause disconnect
     }
 
