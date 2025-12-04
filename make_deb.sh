@@ -6,7 +6,17 @@ PACKAGE_REVISION=1
 
 PACKAGE_DIR=${PACKAGE_NAME}_${VERSION}-${PACKAGE_REVISION}
 
-DESTDIR=${PACKAGE_DIR}/usr/local make install
+if [ $# -gt 0 ]; then
+    if [ $# -eq 1 ] && [ "$1" = "clean" ]; then
+        rm -rf ${PACKAGE_DIR} ${PACKAGE_DIR}.deb
+        exit 0
+    else
+        echo "Usage: $0 [clean]"
+        exit 1
+    fi
+fi
+
+make DESTDIR=${PACKAGE_DIR} install
 
 mkdir -p ${PACKAGE_DIR}/DEBIAN
 cat >${PACKAGE_DIR}/DEBIAN/control <<EOF
